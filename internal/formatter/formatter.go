@@ -7,7 +7,7 @@ import (
 	"github.com/ZetoOfficial/aa-crystals-calc-bot/internal/calculator"
 )
 
-const HelpText = "Команда: куса N\nПример: куса 100"
+const HelpText = "Отправь количество ШК.\nПример: 100"
 
 func Result(result calculator.Result) string {
 	var b strings.Builder

@@ -10,7 +10,7 @@ import (
 var (
 	ErrEmpty          = errors.New("empty command")
 	ErrUnknownCommand = errors.New("unknown command")
-	ErrUsage          = errors.New("usage: куса N")
+	ErrUsage          = errors.New("usage: N")
 	ErrInvalidNumber  = errors.New("N must be a positive integer")
 	ErrTooLarge       = errors.New("N is too large")
 )
@@ -33,15 +33,19 @@ func Parse(input string, maxSHK int) (Command, error) {
 		return Command{}, ErrEmpty
 	}
 
-	command := strings.ToLower(fields[0])
-	if command != "куса" {
+	command := "calc"
+	value := fields[0]
+	if strings.ToLower(fields[0]) == "куса" {
+		command = "куса"
+		if len(fields) != 2 {
+			return Command{}, ErrUsage
+		}
+		value = fields[1]
+	} else if len(fields) != 1 {
 		return Command{}, ErrUnknownCommand
 	}
-	if len(fields) != 2 {
-		return Command{}, ErrUsage
-	}
 
-	shk, err := strconv.Atoi(fields[1])
+	shk, err := strconv.Atoi(value)
 	if err != nil || shk <= 0 {
 		return Command{}, ErrInvalidNumber
 	}
@@ -55,12 +59,12 @@ func Parse(input string, maxSHK int) (Command, error) {
 func UserMessage(err error) string {
 	switch {
 	case errors.Is(err, ErrEmpty), errors.Is(err, ErrUsage):
-		return "Формат: куса 100"
+		return "Формат: 100"
 	case errors.Is(err, ErrInvalidNumber):
-		return "Количество ШК должно быть положительным целым числом. Пример: куса 100"
+		return "Количество ШК должно быть положительным целым числом. Пример: 100"
 	case errors.Is(err, ErrTooLarge):
 		return "Слишком большое количество ШК. Попробуй меньшее значение."
 	default:
-		return "Не понял команду. Пример: куса 100"
+		return "Не понял команду. Пример: 100"
 	}
 }

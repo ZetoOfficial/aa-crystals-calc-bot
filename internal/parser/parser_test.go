@@ -12,12 +12,14 @@ func TestParse(t *testing.T) {
 		wantSHK int
 		wantErr error
 	}{
+		{name: "number only", input: "100", wantSHK: 100},
+		{name: "mention number only", input: "@bot_name 42", wantSHK: 42},
 		{name: "plain command", input: "куса 100", wantSHK: 100},
 		{name: "mention prefix", input: "@bot_name куса 42", wantSHK: 42},
 		{name: "empty", input: "", wantErr: ErrEmpty},
 		{name: "unknown", input: "курс 100", wantErr: ErrUnknownCommand},
-		{name: "invalid number", input: "куса nope", wantErr: ErrInvalidNumber},
-		{name: "too large", input: "куса 101", wantErr: ErrTooLarge},
+		{name: "invalid number", input: "nope", wantErr: ErrInvalidNumber},
+		{name: "too large", input: "101", wantErr: ErrTooLarge},
 	}
 
 	for _, tt := range tests {

@@ -92,7 +92,7 @@ func (h Handler) OnQuery(c tele.Context) error {
 	response, trace, err := h.calculate(c, query.Text)
 	if err != nil {
 		botErrorsTotal.Add("calculate", 1)
-		answerErr, answerUs := h.timedAnswerArticle(c, "Формат: куса 100", parser.UserMessage(err), formatter.HelpText, "help")
+		answerErr, answerUs := h.timedAnswerArticle(c, "Формат: 100", parser.UserMessage(err), formatter.HelpText, "help")
 		trace.answerUs = answerUs
 		h.logTrace("inline", start, trace)
 		return answerErr

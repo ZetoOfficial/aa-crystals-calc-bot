@@ -43,13 +43,13 @@ In Docker, metrics are bound to `0.0.0.0:8080` by default.
 Inline mode:
 
 ```text
-@bot_name куса 100
+@bot_name 100
 ```
 
 Direct message or group message:
 
 ```text
-куса 100
+100
 ```
 
 The bot returns the required crystals, package combination, total USD, total RUB, and extra crystals.
