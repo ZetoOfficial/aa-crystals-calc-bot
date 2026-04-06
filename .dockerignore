@@ -1,0 +1,11 @@
+.git
+.env
+.vscode
+__debug_bin*
+cmd/**/__debug_bin*
+Dockerfile
+README.md
+poc.md
+*.test
+*.out
+.DS_Store

@@ -19,6 +19,25 @@ CBR_RATE_URL=https://www.cbr.ru/scripts/XML_daily.asp
 METRICS_ADDR=127.0.0.1:8080
 ```
 
+## Docker
+
+Build the image:
+
+```bash
+docker build -t aa-crystals-calc-bot .
+```
+
+Run the bot:
+
+```bash
+docker run --rm \
+  --env BOT_TOKEN=123:token \
+  --publish 8080:8080 \
+  aa-crystals-calc-bot
+```
+
+In Docker, metrics are bound to `0.0.0.0:8080` by default.
+
 ## Commands
 
 Inline mode:
