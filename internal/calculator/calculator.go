@@ -3,7 +3,6 @@ package calculator
 import (
 	"context"
 	"fmt"
-	"math"
 )
 
 type Service struct {
@@ -22,7 +21,7 @@ func NewService() *Service {
 // Параллельно ведём parent[c] — индекс пакета, которым пришли в это состояние,
 // чтобы восстановить комбинацию обратным проходом. Останавливаемся на первом
 // c, где dp[c] >= target — это и есть оптимальная стоимость.
-func (s *Service) Calculate(ctx context.Context, shk int, usdRubRate float64) (Result, error) {
+func (s *Service) Calculate(ctx context.Context, shk int, rates Rates) (Result, error) {
 	packs := s.packs
 	if shk <= 0 {
 		return Result{}, ErrInvalidSHK
@@ -98,19 +97,21 @@ func (s *Service) Calculate(ctx context.Context, shk int, usdRubRate float64) (R
 	}
 
 	totalCrystals := dp[bestCost]
-	rateAvailable := usdRubRate > 0
-	totalRUB := 0
-	if rateAvailable {
-		totalRUB = int(math.Round(float64(bestCost) * usdRubRate))
+	ratesAvailable := rates.USDTRUB > 0 && rates.BTCRUB > 0
+	var totalRUB, totalBTC float64
+	if ratesAvailable {
+		totalRUB = float64(bestCost) * rates.USDTRUB
+		totalBTC = totalRUB / rates.BTCRUB
 	}
 
 	return Result{
 		SHK:            shk,
 		TargetCrystals: target,
 		TotalCrystals:  totalCrystals,
-		TotalUSD:       bestCost,
+		TotalUSDT:      bestCost,
 		TotalRUB:       totalRUB,
-		RateAvailable:  rateAvailable,
+		TotalBTC:       totalBTC,
+		RatesAvailable: ratesAvailable,
 		ExtraCrystals:  totalCrystals - target,
 		Combo:          combo,
 	}, nil

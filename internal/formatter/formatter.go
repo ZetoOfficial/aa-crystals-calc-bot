@@ -25,11 +25,13 @@ func (Service) Result(result calculator.Result) string {
 
 	fmt.Fprintf(&b, "\nИтого:\n")
 	fmt.Fprintf(&b, "- %d кристаллов\n", result.TotalCrystals)
-	fmt.Fprintf(&b, "- %d USD\n", result.TotalUSD)
-	if result.RateAvailable {
-		fmt.Fprintf(&b, "- %d RUB\n\n", result.TotalRUB)
+	fmt.Fprintf(&b, "- %d USDT\n", result.TotalUSDT)
+	if result.RatesAvailable {
+		fmt.Fprintf(&b, "- %.0f RUB\n", result.TotalRUB)
+		fmt.Fprintf(&b, "- %.8f BTC\n\n", result.TotalBTC)
 	} else {
-		b.WriteString("- RUB: курс временно недоступен\n\n")
+		b.WriteString("- RUB: курс временно недоступен\n")
+		b.WriteString("- BTC: курс временно недоступен\n\n")
 	}
 	fmt.Fprintf(&b, "Излишек: %d кристаллов.", result.ExtraCrystals)
 

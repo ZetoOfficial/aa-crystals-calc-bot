@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM golang:1.20-alpine AS build
+FROM golang:1.25-alpine AS build
 
 WORKDIR /src
 
@@ -25,12 +25,6 @@ RUN apk add --no-cache ca-certificates && \
 WORKDIR /app
 
 COPY --from=build /out/aa-crystals-calc-bot /app/aa-crystals-calc-bot
-
-ENV USD_RUB_FALLBACK=80
-ENV MAX_SHK=100000
-ENV METRICS_ADDR=0.0.0.0:8080
-
-EXPOSE 8080
 
 USER app
 

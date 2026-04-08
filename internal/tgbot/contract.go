@@ -11,10 +11,10 @@ import (
 	"github.com/ZetoOfficial/aa-crystals-calc-bot/internal/parser"
 )
 
-// RateProvider отдаёт текущий курс USD/RUB.
-// Реализуется *cbr.Client и *cbr.CachingProvider, либо моком в тестах.
-type RateProvider interface {
-	USDRUB(ctx context.Context) (float64, error)
+// RatesProvider отдаёт текущие курсы USDT/RUB и BTC/RUB одной операцией.
+// Реализуется *coingecko.Client и *coingecko.CachingProvider, либо моком в тестах.
+type RatesProvider interface {
+	Rates(ctx context.Context) (calculator.Rates, error)
 }
 
 // Parser разбирает входное сообщение пользователя в команду.
@@ -22,9 +22,9 @@ type Parser interface {
 	Parse(input string) (parser.Command, error)
 }
 
-// Calculator считает оптимальную комбинацию пакетов под заданное число ШК и курс.
+// Calculator считает оптимальную комбинацию пакетов под заданное число ШК и курсы.
 type Calculator interface {
-	Calculate(ctx context.Context, shk int, usdRubRate float64) (calculator.Result, error)
+	Calculate(ctx context.Context, shk int, rates calculator.Rates) (calculator.Result, error)
 }
 
 // Formatter рендерит результат расчёта в текст для пользователя.

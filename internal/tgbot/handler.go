@@ -21,7 +21,7 @@ import (
 var errHelpRequested = errors.New("help requested")
 
 type Handler struct {
-	Rates      RateProvider
+	Rates      RatesProvider
 	Parser     Parser
 	Calculator Calculator
 	Formatter  Formatter
@@ -100,12 +100,12 @@ func (h *Handler) calculate(input string) (string, error) {
 	ctx, cancel := context.WithTimeout(root, 5*time.Second)
 	defer cancel()
 
-	rate, rateErr := h.Rates.USDRUB(ctx)
-	if rateErr != nil {
-		slog.Warn("failed to fetch USD/RUB rate", "err", rateErr)
+	rates, ratesErr := h.Rates.Rates(ctx)
+	if ratesErr != nil {
+		slog.Warn("failed to fetch rates", "err", ratesErr)
 	}
 
-	result, err := h.Calculator.Calculate(ctx, command.SHK, rate)
+	result, err := h.Calculator.Calculate(ctx, command.SHK, rates)
 	if err != nil {
 		return "", err
 	}

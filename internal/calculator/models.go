@@ -22,18 +22,29 @@ type PackChoice struct {
 	Count int
 }
 
+// Rates — курсы для конвертации цены пакетов в RUB и BTC.
+// Заполняется поставщиком курсов (например, coingecko.Client).
+type Rates struct {
+	USDTRUB float64 // RUB за 1 USDT
+	BTCRUB  float64 // RUB за 1 BTC
+}
+
 // Result — итог расчёта оптимальной комбинации.
 type Result struct {
 	SHK            int
 	TargetCrystals int
 	TotalCrystals  int
-	TotalUSD       int
-	TotalRUB       int
-	// RateAvailable=false означает, что курс RUB не удалось получить и
-	// TotalRUB не следует показывать пользователю.
-	RateAvailable bool
-	ExtraCrystals int
-	Combo         []PackChoice
+	// TotalUSDT — сумма Pack.USD напрямую (1 USD = 1 USDT по допущению).
+	TotalUSDT int
+	// TotalRUB = TotalUSDT * Rates.USDTRUB. 0, если !RatesAvailable.
+	TotalRUB float64
+	// TotalBTC = TotalRUB / Rates.BTCRUB. 0, если !RatesAvailable.
+	TotalBTC float64
+	// RatesAvailable=false означает, что курсы получить не удалось
+	// и TotalRUB/TotalBTC не следует показывать пользователю.
+	RatesAvailable bool
+	ExtraCrystals  int
+	Combo          []PackChoice
 }
 
 // DefaultPacks — стандартный набор донат-пакетов игры.

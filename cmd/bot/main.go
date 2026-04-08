@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/ZetoOfficial/aa-crystals-calc-bot/internal/calculator"
-	"github.com/ZetoOfficial/aa-crystals-calc-bot/internal/cbr"
+	"github.com/ZetoOfficial/aa-crystals-calc-bot/internal/coingecko"
 	"github.com/ZetoOfficial/aa-crystals-calc-bot/internal/formatter"
 	"github.com/ZetoOfficial/aa-crystals-calc-bot/internal/parser"
 	"github.com/ZetoOfficial/aa-crystals-calc-bot/internal/tgbot"
@@ -21,14 +21,14 @@ func main() {
 
 	cfg := loadConfig()
 
-	cbrClient := cbr.NewWithBaseURL(&http.Client{Timeout: 5 * time.Second}, cfg.CBRRateURL)
-	rateProvider := cbr.NewCachingProvider(cbrClient, cfg.CBRCacheTTL, cfg.FallbackRate)
+	cgClient := coingecko.NewWithBaseURL(&http.Client{Timeout: 5 * time.Second}, cfg.CoingeckoBaseURL)
+	ratesProvider := coingecko.NewCachingProvider(cgClient, cfg.RatesCacheTTL)
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
 	handler := &tgbot.Handler{
-		Rates:      rateProvider,
+		Rates:      ratesProvider,
 		Parser:     parser.Service{},
 		Calculator: calculator.NewService(),
 		Formatter:  formatter.Service{},

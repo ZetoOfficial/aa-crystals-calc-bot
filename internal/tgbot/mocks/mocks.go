@@ -18,43 +18,43 @@ import (
 	gomock "go.uber.org/mock/gomock"
 )
 
-// MockRateProvider is a mock of RateProvider interface.
-type MockRateProvider struct {
+// MockRatesProvider is a mock of RatesProvider interface.
+type MockRatesProvider struct {
 	ctrl     *gomock.Controller
-	recorder *MockRateProviderMockRecorder
+	recorder *MockRatesProviderMockRecorder
 	isgomock struct{}
 }
 
-// MockRateProviderMockRecorder is the mock recorder for MockRateProvider.
-type MockRateProviderMockRecorder struct {
-	mock *MockRateProvider
+// MockRatesProviderMockRecorder is the mock recorder for MockRatesProvider.
+type MockRatesProviderMockRecorder struct {
+	mock *MockRatesProvider
 }
 
-// NewMockRateProvider creates a new mock instance.
-func NewMockRateProvider(ctrl *gomock.Controller) *MockRateProvider {
-	mock := &MockRateProvider{ctrl: ctrl}
-	mock.recorder = &MockRateProviderMockRecorder{mock}
+// NewMockRatesProvider creates a new mock instance.
+func NewMockRatesProvider(ctrl *gomock.Controller) *MockRatesProvider {
+	mock := &MockRatesProvider{ctrl: ctrl}
+	mock.recorder = &MockRatesProviderMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockRateProvider) EXPECT() *MockRateProviderMockRecorder {
+func (m *MockRatesProvider) EXPECT() *MockRatesProviderMockRecorder {
 	return m.recorder
 }
 
-// USDRUB mocks base method.
-func (m *MockRateProvider) USDRUB(ctx context.Context) (float64, error) {
+// Rates mocks base method.
+func (m *MockRatesProvider) Rates(ctx context.Context) (calculator.Rates, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "USDRUB", ctx)
-	ret0, _ := ret[0].(float64)
+	ret := m.ctrl.Call(m, "Rates", ctx)
+	ret0, _ := ret[0].(calculator.Rates)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// USDRUB indicates an expected call of USDRUB.
-func (mr *MockRateProviderMockRecorder) USDRUB(ctx any) *gomock.Call {
+// Rates indicates an expected call of Rates.
+func (mr *MockRatesProviderMockRecorder) Rates(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "USDRUB", reflect.TypeOf((*MockRateProvider)(nil).USDRUB), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Rates", reflect.TypeOf((*MockRatesProvider)(nil).Rates), ctx)
 }
 
 // MockParser is a mock of Parser interface.
@@ -121,18 +121,18 @@ func (m *MockCalculator) EXPECT() *MockCalculatorMockRecorder {
 }
 
 // Calculate mocks base method.
-func (m *MockCalculator) Calculate(ctx context.Context, shk int, usdRubRate float64) (calculator.Result, error) {
+func (m *MockCalculator) Calculate(ctx context.Context, shk int, rates calculator.Rates) (calculator.Result, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Calculate", ctx, shk, usdRubRate)
+	ret := m.ctrl.Call(m, "Calculate", ctx, shk, rates)
 	ret0, _ := ret[0].(calculator.Result)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Calculate indicates an expected call of Calculate.
-func (mr *MockCalculatorMockRecorder) Calculate(ctx, shk, usdRubRate any) *gomock.Call {
+func (mr *MockCalculatorMockRecorder) Calculate(ctx, shk, rates any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Calculate", reflect.TypeOf((*MockCalculator)(nil).Calculate), ctx, shk, usdRubRate)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Calculate", reflect.TypeOf((*MockCalculator)(nil).Calculate), ctx, shk, rates)
 }
 
 // MockFormatter is a mock of Formatter interface.

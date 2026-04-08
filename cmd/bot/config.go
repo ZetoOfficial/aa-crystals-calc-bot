@@ -2,24 +2,22 @@ package main
 
 import (
 	"os"
-	"strconv"
 	"time"
 
-	"github.com/ZetoOfficial/aa-crystals-calc-bot/internal/cbr"
+	"github.com/ZetoOfficial/aa-crystals-calc-bot/internal/coingecko"
 )
 
 const (
-	defaultFallbackRate = 80
-	defaultCBRCacheTTL  = time.Hour
+	defaultCoingeckoBaseURL = coingecko.DefaultBaseURL
+	defaultRatesCacheTTL    = time.Hour
 )
 
 // Config — все параметры запуска бота, собранные из переменных окружения.
 // Заполняется один раз в loadConfig() и дальше read-only.
 type Config struct {
-	BotToken     string
-	FallbackRate float64
-	CBRCacheTTL  time.Duration
-	CBRRateURL   string
+	BotToken         string
+	CoingeckoBaseURL string
+	RatesCacheTTL    time.Duration
 }
 
 // loadConfig читает конфигурацию из окружения.
@@ -27,10 +25,9 @@ type Config struct {
 // смысла нет, бот всё равно работает с любым валидным fallback'ом.
 func loadConfig() Config {
 	return Config{
-		BotToken:     os.Getenv("BOT_TOKEN"),
-		FallbackRate: envFloat("USD_RUB_FALLBACK", defaultFallbackRate),
-		CBRCacheTTL:  envDuration("CBR_CACHE_TTL", defaultCBRCacheTTL),
-		CBRRateURL:   envString("CBR_RATE_URL", cbr.DefaultDailyURL),
+		BotToken:         os.Getenv("BOT_TOKEN"),
+		CoingeckoBaseURL: envString("COINGECKO_BASE_URL", defaultCoingeckoBaseURL),
+		RatesCacheTTL:    envDuration("RATES_CACHE_TTL", defaultRatesCacheTTL),
 	}
 }
 
@@ -49,18 +46,6 @@ func envDuration(name string, fallback time.Duration) time.Duration {
 	}
 	parsed, err := time.ParseDuration(value)
 	if err != nil || parsed < 0 {
-		return fallback
-	}
-	return parsed
-}
-
-func envFloat(name string, fallback float64) float64 {
-	value := os.Getenv(name)
-	if value == "" {
-		return fallback
-	}
-	parsed, err := strconv.ParseFloat(value, 64)
-	if err != nil || parsed <= 0 {
 		return fallback
 	}
 	return parsed
