@@ -1,199 +1,135 @@
 package calculator
 
 import (
-	"errors"
+	"context"
 	"fmt"
 	"math"
 )
 
-const CrystalsPerSHK = 1050
-
-var (
-	ErrInvalidSHK = errors.New("shk must be greater than zero")
-	ErrNoPacks    = errors.New("packs list is empty")
-)
-
-type Pack struct {
-	USD      int
-	Crystals int
+type Service struct {
+	packs []Pack
 }
 
-type Result struct {
-	SHK            int
-	TargetCrystals int
-	TotalCrystals  int
-	TotalUSD       int
-	TotalRUB       int
-	ExtraCrystals  int
-	Combo          map[int]int
-	Packs          []Pack
+func NewService() *Service {
+	return &Service{packs: DefaultPacks}
 }
 
-var DefaultPacks = []Pack{
-	{USD: 100, Crystals: 25000},
-	{USD: 50, Crystals: 11800},
-	{USD: 30, Crystals: 7000},
-	{USD: 20, Crystals: 4600},
-	{USD: 10, Crystals: 2200},
-	{USD: 5, Crystals: 1000},
-	{USD: 1, Crystals: 180},
-}
-
-func Calculate(shk int, usdRubRate float64) (Result, error) {
-	return CalculateWithPacks(shk, usdRubRate, DefaultPacks)
-}
-
-func CalculateWithPacks(shk int, usdRubRate float64, packs []Pack) (Result, error) {
+// Calculate ищет минимальную по стоимости комбинацию пакетов,
+// дающую не менее shk*CrystalsPerSHK кристаллов.
+//
+// Алгоритм: классический unbounded knapsack по стоимости.
+// dp[c] = максимум кристаллов, достижимый ровно за c USD (или -1, если недостижимо).
+// Параллельно ведём parent[c] — индекс пакета, которым пришли в это состояние,
+// чтобы восстановить комбинацию обратным проходом. Останавливаемся на первом
+// c, где dp[c] >= target — это и есть оптимальная стоимость.
+func (s *Service) Calculate(ctx context.Context, shk int, usdRubRate float64) (Result, error) {
+	packs := s.packs
 	if shk <= 0 {
 		return Result{}, ErrInvalidSHK
 	}
 	if len(packs) == 0 {
 		return Result{}, ErrNoPacks
 	}
-
-	target := shk * CrystalsPerSHK
-	maxPack, err := bestEfficiencyPack(packs)
-	if err != nil {
-		return Result{}, err
+	for _, p := range packs {
+		if p.USD <= 0 || p.Crystals <= 0 {
+			return Result{}, fmt.Errorf("invalid pack: %+v", p)
+		}
 	}
 
-	maxCost := ceilDiv(target, maxPack.Crystals) * maxPack.USD
-	maxByCost := buildMaxByCost(packs, maxCost)
+	target := shk * CrystalsPerSHK
 
+	// Верхняя граница стоимости: купить только лучшим по эффективности паком.
+	bestPack := mostEfficientPack(packs)
+	maxCost := ceilDiv(target, bestPack.Crystals) * bestPack.USD
+
+	dp := make([]int, maxCost+1)
+	parent := make([]int, maxCost+1)
+	for c := 1; c <= maxCost; c++ {
+		dp[c] = -1
+		parent[c] = -1
+	}
+
+	const ctxCheckEvery = 4096
 	bestCost := -1
-	for cost := 0; cost <= maxCost; cost++ {
-		if maxByCost[0][cost] >= target {
-			bestCost = cost
+	for c := 1; c <= maxCost; c++ {
+		if c%ctxCheckEvery == 0 {
+			if err := ctx.Err(); err != nil {
+				return Result{}, err
+			}
+		}
+		for i, pack := range packs {
+			if c < pack.USD {
+				continue
+			}
+			prev := dp[c-pack.USD]
+			if prev < 0 {
+				continue
+			}
+			if cand := prev + pack.Crystals; cand > dp[c] {
+				dp[c] = cand
+				parent[c] = i
+			}
+		}
+		if dp[c] >= target {
+			bestCost = c
 			break
 		}
 	}
+
 	if bestCost < 0 {
 		return Result{}, fmt.Errorf("no package combination covers %d crystals", target)
 	}
 
-	bestCrystals, combo := minimizeCrystalsForCost(packs, maxByCost, bestCost, target)
-	totalRUB := int(math.Round(float64(bestCost) * usdRubRate))
+	counts := make([]int, len(packs))
+	for c := bestCost; c > 0; {
+		i := parent[c]
+		if i < 0 {
+			return Result{}, fmt.Errorf("reconstruct combination at cost %d", c)
+		}
+		counts[i]++
+		c -= packs[i].USD
+	}
+
+	combo := make([]PackChoice, 0, len(packs))
+	for i, count := range counts {
+		if count > 0 {
+			combo = append(combo, PackChoice{Pack: packs[i], Count: count})
+		}
+	}
+
+	totalCrystals := dp[bestCost]
+	rateAvailable := usdRubRate > 0
+	totalRUB := 0
+	if rateAvailable {
+		totalRUB = int(math.Round(float64(bestCost) * usdRubRate))
+	}
 
 	return Result{
 		SHK:            shk,
 		TargetCrystals: target,
-		TotalCrystals:  bestCrystals,
+		TotalCrystals:  totalCrystals,
 		TotalUSD:       bestCost,
 		TotalRUB:       totalRUB,
-		ExtraCrystals:  bestCrystals - target,
+		RateAvailable:  rateAvailable,
+		ExtraCrystals:  totalCrystals - target,
 		Combo:          combo,
-		Packs:          clonePacks(packs),
 	}, nil
 }
 
-func bestEfficiencyPack(packs []Pack) (Pack, error) {
-	var best Pack
-	for _, pack := range packs {
-		if pack.USD <= 0 || pack.Crystals <= 0 {
-			return Pack{}, fmt.Errorf("invalid pack: %+v", pack)
-		}
-		if best.USD == 0 || pack.Crystals*best.USD > best.Crystals*pack.USD {
-			best = pack
-		}
-	}
-	return best, nil
-}
-
-func buildMaxByCost(packs []Pack, maxCost int) [][]int {
-	maxByCost := make([][]int, len(packs)+1)
-	maxByCost[len(packs)] = make([]int, maxCost+1)
-	for cost := 1; cost <= maxCost; cost++ {
-		maxByCost[len(packs)][cost] = -1
-	}
-
-	for i := len(packs) - 1; i >= 0; i-- {
-		maxByCost[i] = make([]int, maxCost+1)
-		copy(maxByCost[i], maxByCost[i+1])
-
-		pack := packs[i]
-		for cost := pack.USD; cost <= maxCost; cost++ {
-			prev := maxByCost[i][cost-pack.USD]
-			if prev < 0 {
-				continue
-			}
-			if candidate := prev + pack.Crystals; candidate > maxByCost[i][cost] {
-				maxByCost[i][cost] = candidate
-			}
+// mostEfficientPack возвращает пакет с лучшим отношением crystals/USD.
+// Все пакеты уже провалидированы вызывающей стороной.
+func mostEfficientPack(packs []Pack) Pack {
+	best := packs[0]
+	for _, p := range packs[1:] {
+		// p лучше, если p.Crystals/p.USD > best.Crystals/best.USD,
+		// что равно p.Crystals*best.USD > best.Crystals*p.USD без деления.
+		if p.Crystals*best.USD > best.Crystals*p.USD {
+			best = p
 		}
 	}
-
-	return maxByCost
-}
-
-func minimizeCrystalsForCost(packs []Pack, maxByCost [][]int, cost int, target int) (int, map[int]int) {
-	bestCrystals := maxByCost[0][cost]
-	bestCombo := make([]int, len(packs))
-	combo := make([]int, len(packs))
-
-	var save = func(total int) {
-		if total >= target && total <= bestCrystals {
-			bestCrystals = total
-			copy(bestCombo, combo)
-		}
-	}
-
-	var dfs func(index int, remainingCost int, crystals int)
-	dfs = func(index int, remainingCost int, crystals int) {
-		if remainingCost < 0 || index >= len(packs) {
-			return
-		}
-		if maxByCost[index][remainingCost] < 0 {
-			return
-		}
-		if crystals+maxByCost[index][remainingCost] < target {
-			return
-		}
-
-		pack := packs[index]
-		if index == len(packs)-1 {
-			if remainingCost%pack.USD != 0 {
-				return
-			}
-			combo[index] = remainingCost / pack.USD
-			save(crystals + combo[index]*pack.Crystals)
-			combo[index] = 0
-			return
-		}
-
-		for count := 0; count <= remainingCost/pack.USD; count++ {
-			nextCost := remainingCost - count*pack.USD
-			nextCrystals := crystals + count*pack.Crystals
-			if nextCrystals+maxByCost[index+1][nextCost] < target {
-				continue
-			}
-			if nextCrystals >= bestCrystals {
-				break
-			}
-
-			combo[index] = count
-			dfs(index+1, nextCost, nextCrystals)
-		}
-		combo[index] = 0
-	}
-
-	dfs(0, cost, 0)
-
-	result := make(map[int]int, len(packs))
-	for i, count := range bestCombo {
-		if count > 0 {
-			result[packs[i].USD] = count
-		}
-	}
-
-	return bestCrystals, result
+	return best
 }
 
 func ceilDiv(a, b int) int {
 	return (a + b - 1) / b
-}
-
-func clonePacks(packs []Pack) []Pack {
-	cloned := make([]Pack, len(packs))
-	copy(cloned, packs)
-	return cloned
 }

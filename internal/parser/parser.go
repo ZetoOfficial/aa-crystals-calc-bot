@@ -7,12 +7,22 @@ import (
 	"strings"
 )
 
+// MaxSHK — верхний предел количества ШК, разрешённый в одной команде.
+// Подобран с запасом, чтобы калькулятор не уходил в многомегабайтный DP.
+const MaxSHK = 100000
+
 var (
 	ErrEmpty          = errors.New("empty command")
 	ErrUnknownCommand = errors.New("unknown command")
 	ErrUsage          = errors.New("usage: N")
-	ErrInvalidNumber  = errors.New("N must be a positive integer")
-	ErrTooLarge       = errors.New("N is too large")
+	ErrInvalidNumber  = errors.New("n must be a positive integer")
+	ErrTooLarge       = errors.New("n is too large")
+)
+
+const (
+	CommandCalc = "calc"
+	CommandHelp = "help"
+	CommandKusa = "куса"
 )
 
 type Command struct {
@@ -20,23 +30,30 @@ type Command struct {
 	SHK  int
 }
 
-func Parse(input string, maxSHK int) (Command, error) {
+// Service — реализация парсинга команд бота.
+// Безсостоятельная: можно использовать через нулевое значение.
+type Service struct{}
+
+// Parse разбирает входное сообщение пользователя в Command.
+func (Service) Parse(input string) (Command, error) {
 	fields := strings.Fields(strings.TrimSpace(input))
 	if len(fields) == 0 {
 		return Command{}, ErrEmpty
 	}
 
-	if strings.HasPrefix(fields[0], "@") {
-		fields = fields[1:]
-	}
-	if len(fields) == 0 {
-		return Command{}, ErrEmpty
+	first := strings.ToLower(fields[0])
+
+	if first == "помощь" || first == "help" {
+		if len(fields) != 1 {
+			return Command{}, ErrUnknownCommand
+		}
+		return Command{Name: CommandHelp}, nil
 	}
 
-	command := "calc"
+	command := CommandCalc
 	value := fields[0]
-	if strings.ToLower(fields[0]) == "куса" {
-		command = "куса"
+	if first == CommandKusa {
+		command = CommandKusa
 		if len(fields) != 2 {
 			return Command{}, ErrUsage
 		}
@@ -49,13 +66,14 @@ func Parse(input string, maxSHK int) (Command, error) {
 	if err != nil || shk <= 0 {
 		return Command{}, ErrInvalidNumber
 	}
-	if maxSHK > 0 && shk > maxSHK {
-		return Command{}, fmt.Errorf("%w: max is %d", ErrTooLarge, maxSHK)
+	if shk > MaxSHK {
+		return Command{}, fmt.Errorf("%w: max is %d", ErrTooLarge, MaxSHK)
 	}
 
 	return Command{Name: command, SHK: shk}, nil
 }
 
+// UserMessage переводит ошибку парсера в текст для пользователя.
 func UserMessage(err error) string {
 	switch {
 	case errors.Is(err, ErrEmpty), errors.Is(err, ErrUsage):
