@@ -104,6 +104,19 @@ func (s *Service) Calculate(ctx context.Context, shk int, rates Rates) (Result, 
 		totalBTC = totalRUB / rates.BTCRUB
 	}
 
+	rubPerSHK := 0.0
+	if ratesAvailable && shk > 0 {
+		rubPerSHK = totalRUB / float64(shk)
+	}
+	usdtPerSHK := 0.0
+	if shk > 0 {
+		usdtPerSHK = float64(bestCost) / float64(shk)
+	}
+	btcPerSHK := 0.0
+	if ratesAvailable && shk > 0 {
+		btcPerSHK = totalBTC / float64(shk)
+	}
+
 	return Result{
 		SHK:            shk,
 		TargetCrystals: target,
@@ -111,6 +124,9 @@ func (s *Service) Calculate(ctx context.Context, shk int, rates Rates) (Result, 
 		TotalUSDT:      bestCost,
 		TotalRUB:       totalRUB,
 		TotalBTC:       totalBTC,
+		RUBPerSHK:      rubPerSHK,
+		USDTPerSHK:     usdtPerSHK,
+		BTCPerSHK:      btcPerSHK,
 		RatesAvailable: ratesAvailable,
 		ExtraCrystals:  totalCrystals - target,
 		Combo:          combo,

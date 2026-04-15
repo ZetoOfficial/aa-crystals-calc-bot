@@ -40,6 +40,12 @@ type Result struct {
 	TotalRUB float64
 	// TotalBTC = TotalRUB / Rates.BTCRUB. 0, если !RatesAvailable.
 	TotalBTC float64
+	// RUBPerSHK = TotalRUB / SHK. 0, если !RatesAvailable.
+	RUBPerSHK float64
+	// USDTPerSHK = TotalUSDT / SHK. 0, если SHK=0.
+	USDTPerSHK float64
+	// BTCPerSHK = TotalBTC / SHK. 0, если !RatesAvailable или SHK=0.
+	BTCPerSHK float64
 	// RatesAvailable=false означает, что курсы получить не удалось
 	// и TotalRUB/TotalBTC не следует показывать пользователю.
 	RatesAvailable bool

@@ -9,11 +9,8 @@ import (
 
 const HelpText = "Отправь количество ШК.\nПример: 100"
 
-// Service — реализация форматирования ответов бота.
-// Безсостоятельная: можно использовать через нулевое значение.
 type Service struct{}
 
-// Result рендерит результат расчёта в текст для отправки пользователю.
 func (Service) Result(result calculator.Result) string {
 	var b strings.Builder
 
@@ -29,6 +26,9 @@ func (Service) Result(result calculator.Result) string {
 	if result.RatesAvailable {
 		fmt.Fprintf(&b, "- %.0f RUB\n", result.TotalRUB)
 		fmt.Fprintf(&b, "- %.8f BTC\n\n", result.TotalBTC)
+		fmt.Fprintf(&b, "- %.8f RUB per 1 ШК\n", result.RUBPerSHK)
+		fmt.Fprintf(&b, "- %.8f USDT per 1 ШК\n", result.USDTPerSHK)
+		fmt.Fprintf(&b, "- %.8f BTC per 1 ШК\n\n", result.BTCPerSHK)
 	} else {
 		b.WriteString("- RUB: курс временно недоступен\n")
 		b.WriteString("- BTC: курс временно недоступен\n\n")
